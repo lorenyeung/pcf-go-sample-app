@@ -1,3 +1,4 @@
 ci/credhub.yml
 ci/set-pipeline.sh
 .DS_Store
+*.log

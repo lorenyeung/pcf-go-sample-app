@@ -1,9 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
@@ -11,7 +13,7 @@ import (
 	cfenv "github.com/cloudfoundry-community/go-cfenv"
 )
 
-//Index holds fields displayed on the index.html template
+// Index holds fields displayed on the index.html template
 type Index struct {
 	AppName          string
 	AppInstanceIndex int
@@ -21,7 +23,7 @@ type Index struct {
 	SpaceName        string
 }
 
-//Service holds the name and label of a service instance
+// Service holds the name and label of a service instance
 type Service struct {
 	Name  string
 	Label string
@@ -30,7 +32,12 @@ type Service struct {
 func main() {
 
 	index := Index{"Unknown", -1, "Unknown", []string{}, []Service{}, "Unknown"}
-
+	f, err := os.OpenFile("main.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	logger := slog.New(slog.NewTextHandler(f, nil))
 	template := template.Must(template.ParseFiles("templates/index.html"))
 
 	http.Handle("/static/",
@@ -76,13 +83,46 @@ func main() {
 	})
 
 	http.HandleFunc("/kill", func(w http.ResponseWriter, r *http.Request) {
+		logger.Error("force kill")
 		os.Exit(1)
+	})
+
+	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+		logger.Info("OK PING")
+		data := Data{Response: "OK"}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(data)
+	})
+
+	http.HandleFunc("/warn", func(w http.ResponseWriter, r *http.Request) {
+		logger.Warn("OK Warn")
+		data := Data{Response: "WARNING"}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(199)
+		json.NewEncoder(w).Encode(data)
+	})
+
+	http.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
+		logger.Error("OK Error")
+		data := Data{Response: "ERROR"}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(data)
 	})
 
 	var PORT string
 	if PORT = os.Getenv("PORT"); PORT == "" {
 		PORT = "8080"
 	}
+	var HOST string
+	if HOST = os.Getenv("HOST"); PORT == "" {
+		HOST = ""
+	}
+	logger.Info("logging the start of this app on " + PORT)
+	fmt.Println(http.ListenAndServe(HOST+":"+PORT, nil))
+}
 
-	fmt.Println(http.ListenAndServe(":"+PORT, nil))
+type Data struct {
+	Response string
 }
