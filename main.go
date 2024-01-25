@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"crypto/tls"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -10,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	cfenv "github.com/cloudfoundry-community/go-cfenv"
 )
@@ -37,6 +40,13 @@ type Service struct {
 }
 
 func main() {
+	//init splunk
+	checkForTenantToken()
+	// Initialize the client
+	SplunkToken := os.Getenv("BEARER_TOKEN")
+	SplunkTenant := os.Getenv("TENANT")
+
+	// Validate access to Splunk Cloud Services and tenant
 
 	index := Index{"Unknown", -1, "Unknown", []string{}, []Service{}, "Unknown"}
 	f, err := os.OpenFile("main.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
@@ -54,6 +64,7 @@ func main() {
 	if cfenv.IsRunningOnCF() {
 		appEnv, err := cfenv.Current()
 		if err != nil {
+			logger.Error(err.Error())
 			log.Fatal(err)
 		}
 		if appEnv.Name != "" {
@@ -85,6 +96,7 @@ func main() {
 		w.Header().Set("Pragma", "no-cache")                                   // HTTP 1.0.
 		w.Header().Set("Expires", "0")                                         // Proxies.
 		if err := template.ExecuteTemplate(w, "index.html", index); err != nil {
+			logger.Error("500 Error on template index.html:" + err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
@@ -95,27 +107,21 @@ func main() {
 	})
 
 	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
-		logger.Info("OK PING")
-		data := Data{Response: "OK"}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(data)
+		logger.Info("OK application successfully pinged")
+		splunkcollector("OK application successfully pinged", "INFO", SplunkTenant, SplunkToken)
+		httpjsonresponse("OK", http.StatusOK, w)
 	})
 
 	http.HandleFunc("/warn", func(w http.ResponseWriter, r *http.Request) {
 		logger.Warn("OK Warn")
-		data := Data{Response: "WARNING"}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(199)
-		json.NewEncoder(w).Encode(data)
+		splunkcollector("OK Warn generated", "WARN", SplunkTenant, SplunkToken)
+		httpjsonresponse("WARNING", 199, w)
 	})
 
 	http.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		logger.Error("OK Error")
-		data := Data{Response: "ERROR"}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(data)
+		splunkcollector("OK Error generated", "ERROR", SplunkTenant, SplunkToken)
+		httpjsonresponse("ERROR", http.StatusInternalServerError, w)
 	})
 
 	var PORT string
@@ -132,4 +138,51 @@ func main() {
 
 type Data struct {
 	Response string
+}
+
+func httpjsonresponse(response string, code int, w http.ResponseWriter) {
+	data := Data{Response: response}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(data)
+}
+
+func exitOnErr(err error) {
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+func splunkcollector(msg, level, tenant, token string) {
+	jsonBody := []byte("{\"event\": \"" + msg + "\", \"fields\":{\"log_level\":\"" + level + "\"},\"sourcetype\": \"httpevent\",\"source\":\"lorensampleapp\"}")
+	bodyReader := bytes.NewReader(jsonBody)
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	req, err := http.NewRequest(http.MethodPost, "https://"+tenant+"/services/collector/event", bodyReader)
+
+	if err != nil {
+		fmt.Printf("client: could not create request: %s\n", err)
+		//os.Exit(1)
+	}
+	req.Header.Set("Authorization", "Splunk "+token)
+
+	client := http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		fmt.Printf("client: error making http request: %s\n", err)
+		//os.Exit(1)
+	}
+	fmt.Println(res)
+}
+
+func checkForTenantToken() {
+	if os.Getenv("BEARER_TOKEN") == "" {
+		exitOnErr(fmt.Errorf("$BEARER_TOKEN must be set"))
+	}
+	if os.Getenv("TENANT") == "" {
+		exitOnErr(fmt.Errorf("$TENANT must be set"))
+	}
 }
