@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -12,6 +13,12 @@ import (
 
 	cfenv "github.com/cloudfoundry-community/go-cfenv"
 )
+
+//go:embed all:templates
+var indexHtml embed.FS
+
+//go:embed all:static
+var staticAssets embed.FS
 
 // Index holds fields displayed on the index.html template
 type Index struct {
