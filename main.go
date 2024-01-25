@@ -180,9 +180,9 @@ func splunkcollector(msg, level, tenant, token string) {
 
 func checkForTenantToken() {
 	if os.Getenv("BEARER_TOKEN") == "" {
-		exitOnErr(fmt.Errorf("$BEARER_TOKEN must be set"))
+		fmt.Printf("$BEARER_TOKEN must be set for splunk to log")
 	}
 	if os.Getenv("TENANT") == "" {
-		exitOnErr(fmt.Errorf("$TENANT must be set"))
+		fmt.Printf("$TENANT must be set splunk to log")
 	}
 }
