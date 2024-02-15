@@ -108,20 +108,20 @@ func main() {
 
 	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("OK application successfully pinged")
-		splunkcollector("OK application successfully pinged", "INFO", SplunkTenant, SplunkToken)
-		httpjsonresponse("OK", http.StatusOK, w)
+		splunkres := splunkcollector("OK application successfully pinged", "INFO", SplunkTenant, SplunkToken)
+		httpjsonresponse("OK:"+splunkres, http.StatusOK, w)
 	})
 
 	http.HandleFunc("/warn", func(w http.ResponseWriter, r *http.Request) {
 		logger.Warn("OK Warn")
-		splunkcollector("OK Warn generated", "WARN", SplunkTenant, SplunkToken)
-		httpjsonresponse("WARNING", 199, w)
+		splunkres := splunkcollector("OK Warn generated", "WARN", SplunkTenant, SplunkToken)
+		httpjsonresponse("WARNING:"+splunkres, 199, w)
 	})
 
 	http.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		logger.Error("OK Error")
-		splunkcollector("OK Error generated", "ERROR", SplunkTenant, SplunkToken)
-		httpjsonresponse("ERROR", http.StatusInternalServerError, w)
+		splunkres := splunkcollector("OK Error generated", "ERROR", SplunkTenant, SplunkToken)
+		httpjsonresponse("ERROR:"+splunkres, http.StatusInternalServerError, w)
 	})
 
 	var PORT string
@@ -154,7 +154,7 @@ func exitOnErr(err error) {
 	}
 }
 
-func splunkcollector(msg, level, tenant, token string) {
+func splunkcollector(msg, level, tenant, token string) string {
 	jsonBody := []byte("{\"event\": \"" + msg + "\", \"fields\":{\"log_level\":\"" + level + "\"},\"sourcetype\": \"httpevent\",\"source\":\"lorensampleapp\"}")
 	bodyReader := bytes.NewReader(jsonBody)
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
@@ -162,7 +162,7 @@ func splunkcollector(msg, level, tenant, token string) {
 
 	if err != nil {
 		fmt.Printf("client: could not create request: %s\n", err)
-		//os.Exit(1)
+		return "client: could not create request:" + err.Error()
 	}
 	req.Header.Set("Authorization", "Splunk "+token)
 
@@ -173,9 +173,10 @@ func splunkcollector(msg, level, tenant, token string) {
 	res, err := client.Do(req)
 	if err != nil {
 		fmt.Printf("client: error making http request: %s\n", err)
-		//os.Exit(1)
+		return "client: error making http request:" + err.Error()
 	}
 	fmt.Println(res)
+	return ""
 }
 
 func checkForTenantToken() {
