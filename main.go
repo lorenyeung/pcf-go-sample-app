@@ -54,6 +54,10 @@ func main() {
 		panic(err)
 	}
 	defer f.Close()
+
+	//get tas info
+	name := os.Getenv("ARTIFACT")
+
 	logger := slog.New(slog.NewTextHandler(f, nil))
 	template := template.Must(template.ParseFiles("templates/index.html"))
 
@@ -108,19 +112,19 @@ func main() {
 
 	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("OK application successfully pinged")
-		splunkres := splunkcollector("OK application successfully pinged", "INFO", SplunkTenant, SplunkToken)
+		splunkres := splunkcollector("OK application successfully pinged", "INFO", SplunkTenant, SplunkToken, index.AppName, name)
 		httpjsonresponse("OK:"+splunkres, http.StatusOK, w)
 	})
 
 	http.HandleFunc("/warn", func(w http.ResponseWriter, r *http.Request) {
 		logger.Warn("OK Warn")
-		splunkres := splunkcollector("OK Warn generated", "WARN", SplunkTenant, SplunkToken)
+		splunkres := splunkcollector("OK Warn generated", "WARN", SplunkTenant, SplunkToken, index.AppName, name)
 		httpjsonresponse("WARNING:"+splunkres, 199, w)
 	})
 
 	http.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		logger.Error("OK Error")
-		splunkres := splunkcollector("OK Error generated", "ERROR", SplunkTenant, SplunkToken)
+		splunkres := splunkcollector("OK Error generated", "ERROR", SplunkTenant, SplunkToken, index.AppName, name)
 		httpjsonresponse("ERROR:"+splunkres, http.StatusInternalServerError, w)
 	})
 
@@ -154,8 +158,8 @@ func exitOnErr(err error) {
 	}
 }
 
-func splunkcollector(msg, level, tenant, token string) string {
-	jsonBody := []byte("{\"event\": \"" + msg + "\", \"fields\":{\"log_level\":\"" + level + "\"},\"sourcetype\": \"httpevent\",\"source\":\"lorensampleapp\"}")
+func splunkcollector(msg, level, tenant, token, tasApplicationName, name string) string {
+	jsonBody := []byte("{\"event\": \"" + msg + "\", \"fields\":{\"log_level\":\"" + level + "\",\"app_name\":\"" + name + "\"},\"sourcetype\": \"httpevent\",\"source\":\"" + tasApplicationName + "\"}")
 	bodyReader := bytes.NewReader(jsonBody)
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	req, err := http.NewRequest(http.MethodPost, "https://"+tenant+"/services/collector/event", bodyReader)
