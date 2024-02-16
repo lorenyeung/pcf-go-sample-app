@@ -180,7 +180,7 @@ func splunkcollector(msg, level, tenant, token, tasApplicationName, name string)
 		return "client: error making http request:" + err.Error()
 	}
 	fmt.Println(res)
-	return "tasApplicationName wrote to splunk successfully!"
+	return "tasApplicationName wrote to splunk successfully"
 }
 
 func checkForTenantToken() {
