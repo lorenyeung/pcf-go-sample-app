@@ -159,7 +159,7 @@ func exitOnErr(err error) {
 }
 
 func splunkcollector(msg, level, tenant, token, tasApplicationName, name string) string {
-	jsonBody := []byte("{\"event\": \"" + msg + "\", \"fields\":{\"log_level\":\"" + level + "\",\"app_name\":\"" + name + "\"},\"sourcetype\": \"httpevent\",\"source\":\"" + tasApplicationName + "\"}")
+	jsonBody := []byte("{\"event\": \"" + msg + "\", \"fields\":{\"log_level\":\"" + level + "\",\"app_name\":\"" + name + "\"},\"sourcetype\": \"httpevent\",\"host\":\"" + tasApplicationName + "\",\"source\":\"" + name + "\"}")
 	bodyReader := bytes.NewReader(jsonBody)
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	req, err := http.NewRequest(http.MethodPost, "https://"+tenant+"/services/collector/event", bodyReader)

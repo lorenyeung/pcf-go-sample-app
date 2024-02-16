@@ -1,0 +1,5 @@
+FROM golang:1.21.6-alpine
+WORKDIR /build
+RUN apk add zip make curl git
+COPY go.mod go.sum ./
+RUN go mod download
