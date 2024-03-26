@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -111,20 +112,17 @@ func main() {
 	})
 
 	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
-		logger.Info("OK application successfully pinged")
-		splunkres := splunkcollector("OK application successfully pinged", "INFO", SplunkTenant, SplunkToken, index.AppName, name)
+		splunkres := splunkcollector("OK application successfully pinged", "INFO", SplunkTenant, SplunkToken, index.AppName, name, logger)
 		httpjsonresponse("OK:"+splunkres, http.StatusOK, w)
 	})
 
 	http.HandleFunc("/warn", func(w http.ResponseWriter, r *http.Request) {
-		logger.Warn("OK Warn")
-		splunkres := splunkcollector("OK Warn generated", "WARN", SplunkTenant, SplunkToken, index.AppName, name)
+		splunkres := splunkcollector("OK Warn generated", "WARN", SplunkTenant, SplunkToken, index.AppName, name, logger)
 		httpjsonresponse("WARNING:"+splunkres, 199, w)
 	})
 
 	http.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
-		logger.Error("OK Error")
-		splunkres := splunkcollector("OK Error generated", "ERROR", SplunkTenant, SplunkToken, index.AppName, name)
+		splunkres := splunkcollector("OK Error generated", "ERROR", SplunkTenant, SplunkToken, index.AppName, name, logger)
 		httpjsonresponse("ERROR:"+splunkres, http.StatusInternalServerError, w)
 	})
 
@@ -136,7 +134,17 @@ func main() {
 	if HOST = os.Getenv("HOST"); PORT == "" {
 		HOST = ""
 	}
-	logger.Info("logging the start of this app on " + PORT)
+
+	// add sleep to increase start up time
+	StartUpSleep, err := strconv.Atoi(os.Getenv("STARTUP_SLEEP"))
+	if err != nil {
+		splunkcollector("failed to set sleep time from env var STARTUP_SLEEP. Setting to 0", "WARN", SplunkTenant, SplunkToken, index.AppName, name, logger)
+		StartUpSleep = 0
+	}
+	splunkcollector("sleeping for "+strconv.Itoa(StartUpSleep)+" seconds", "INFO", SplunkTenant, SplunkToken, index.AppName, name, logger)
+	time.Sleep(time.Duration(StartUpSleep) * time.Second)
+
+	splunkcollector("logging the start of this app on "+HOST+":"+PORT, "INFO", SplunkTenant, SplunkToken, index.AppName, name, logger)
 	fmt.Println(http.ListenAndServe(HOST+":"+PORT, nil))
 }
 
@@ -158,7 +166,15 @@ func exitOnErr(err error) {
 	}
 }
 
-func splunkcollector(msg, level, tenant, token, tasApplicationName, name string) string {
+func splunkcollector(msg, level, tenant, token, tasApplicationName, name string, logger *slog.Logger) string {
+	switch level {
+	case "INFO":
+		logger.Info(msg)
+	case "WARN":
+		logger.Warn(msg)
+	case "ERROR":
+		logger.Error(msg)
+	}
 	jsonBody := []byte("{\"event\": \"" + msg + "\", \"fields\":{\"log_level\":\"" + level + "\",\"app_name\":\"" + name + "\"},\"sourcetype\": \"httpevent\",\"host\":\"" + tasApplicationName + "\",\"source\":\"" + name + "\"}")
 	bodyReader := bytes.NewReader(jsonBody)
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
