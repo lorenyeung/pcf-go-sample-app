@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"log/slog"
 	"net/http"
@@ -59,7 +60,9 @@ func main() {
 	//get tas info
 	name := os.Getenv("ARTIFACT")
 
-	logger := slog.New(slog.NewTextHandler(f, nil))
+	mw := io.MultiWriter(os.Stdout, f)
+	logger := slog.New(slog.NewTextHandler(mw, nil))
+
 	template := template.Must(template.ParseFiles("templates/index.html"))
 
 	http.Handle("/static/",
