@@ -16,6 +16,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	cfenv "github.com/cloudfoundry-community/go-cfenv"
 )
 
@@ -137,6 +139,8 @@ func main() {
 	if HOST = os.Getenv("HOST"); PORT == "" {
 		HOST = ""
 	}
+
+	http.Handle("/metrics", promhttp.Handler())
 
 	// add sleep to increase start up time
 	StartUpSleep, err := strconv.Atoi(os.Getenv("STARTUP_SLEEP"))
