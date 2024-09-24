@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -61,6 +62,21 @@ func main() {
 
 	//get tas info
 	name := os.Getenv("ARTIFACT")
+
+	ex, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	exPath := filepath.Dir(ex)
+	fmt.Println(exPath)
+	entries, err := os.ReadDir("./")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, e := range entries {
+		fmt.Println(e.Name())
+	}
 
 	mw := io.MultiWriter(os.Stdout, f)
 	logger := slog.New(slog.NewTextHandler(mw, nil))
