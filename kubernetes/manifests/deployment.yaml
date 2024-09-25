@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
       - name: {{.Values.name}}
-        image: lorenharness/{{.Values.name}}:1.0.13
+        image: lorenharness/{{.Values.image}}:{{.Values.tag}}
         ports:
         - containerPort: 8080
