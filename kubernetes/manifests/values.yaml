@@ -1,0 +1,18 @@
+namespace: <+infra.namespace>
+replicas: 10
+name: <+service.identifier>
+image: <+artifacts.primary.imagePath>
+tag: <+artifacts.primary.tag>
+
+serviceType: LoadBalancer
+
+servicePort: 80
+serviceTargetPort: 8080
+
+# Both are added to the container environment in podSpec as envFrom source.
+env:
+  config:
+    TENANT: value10
+    BEARER_TOKEN: value1
+  secrets:
+    key2: value2
