@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pcf-go-sample-app-deployment
+  name: {{.Values.name}}-deployment
   labels:
-    app: pcf-go-sample-app
+    app: {{.Values.name}}
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: pcf-go-sample-app
+      app: {{.Values.name}}
   template:
     metadata:
       labels:
-        app: pcf-go-sample-app
+        app: {{.Values.name}}
     spec:
       containers:
-      - name: pcf-go-sample-app
-        image: lorenharness/pcf-go-sample-app:1.0.13
+      - name: {{.Values.name}}
+        image: lorenharness/{{.Values.name}}:1.0.13
         ports:
         - containerPort: 8080
