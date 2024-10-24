@@ -60,6 +60,9 @@ func main() {
 		newrelic.ConfigLicense(NewRelicToken),
 		newrelic.ConfigAppLogForwardingEnabled(true),
 	)
+	if err != nil {
+		panic(err)
+	}
 
 	index := Index{"Unknown", -1, "Unknown", []string{}, []Service{}, "Unknown"}
 	f, err := os.OpenFile("main.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
@@ -150,9 +153,13 @@ func main() {
 		httpjsonresponse("WARNING:"+splunkres, 199, w)
 	})
 
-	http.HandleFunc(newrelic.WrapHandleFunc(app, "/error", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		splunkres := splunkcollector("OK Error generated", "ERROR", SplunkTenant, SplunkToken, index.AppName, name, logger)
 		httpjsonresponse("ERROR:"+splunkres, http.StatusInternalServerError, w)
+	})
+
+	http.HandleFunc(newrelic.WrapHandleFunc(app, "/nrerror", func(w http.ResponseWriter, r *http.Request) {
+		httpjsonresponse("ERROR:"+"new relic", http.StatusInternalServerError, w)
 	}))
 
 	var PORT string
