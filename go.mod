@@ -1,6 +1,8 @@
 module github.com/cloudfoundry-tutorials/sample-app
 
-go 1.17
+go 1.21
+
+toolchain go1.22.5
 
 require (
 	github.com/cloudfoundry-community/go-cfenv v1.18.0
@@ -12,6 +14,7 @@ require (
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.1.2 // indirect
+	github.com/newrelic/go-agent/v3 v3.35.0 // indirect
 	github.com/onsi/gomega v1.8.1 // indirect
 	github.com/prometheus/client_model v0.0.0-20190129233127-fd36f4220a90 // indirect
 	github.com/prometheus/common v0.4.0 // indirect

@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	cfenv "github.com/cloudfoundry-community/go-cfenv"
@@ -50,8 +51,15 @@ func main() {
 	// Initialize the client
 	SplunkToken := os.Getenv("BEARER_TOKEN")
 	SplunkTenant := os.Getenv("TENANT")
+	NewRelicToken := os.Getenv("NEWRELIC_TOKEN")
 
 	// Validate access to Splunk Cloud Services and tenant
+
+	app, err := newrelic.NewApplication(
+		newrelic.ConfigAppName("pcfgosampleappk8ssvc"),
+		newrelic.ConfigLicense(NewRelicToken),
+		newrelic.ConfigAppLogForwardingEnabled(true),
+	)
 
 	index := Index{"Unknown", -1, "Unknown", []string{}, []Service{}, "Unknown"}
 	f, err := os.OpenFile("main.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
@@ -142,10 +150,10 @@ func main() {
 		httpjsonresponse("WARNING:"+splunkres, 199, w)
 	})
 
-	http.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc(newrelic.WrapHandleFunc(app, "/error", func(w http.ResponseWriter, r *http.Request) {
 		splunkres := splunkcollector("OK Error generated", "ERROR", SplunkTenant, SplunkToken, index.AppName, name, logger)
 		httpjsonresponse("ERROR:"+splunkres, http.StatusInternalServerError, w)
-	})
+	}))
 
 	var PORT string
 	if PORT = os.Getenv("PORT"); PORT == "" {
