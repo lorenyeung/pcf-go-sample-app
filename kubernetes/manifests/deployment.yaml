@@ -24,7 +24,7 @@ spec:
         ports:
         - containerPort: 8080
       env:
-        {{- range $key, $value := .Values.env }}
+        {{- range $key, $value := .Values.env.config }}
         - name: {{ $key }}
           value: {{ $value | quote }}
         {{- end }}
