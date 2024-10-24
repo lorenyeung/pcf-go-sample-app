@@ -23,3 +23,8 @@ spec:
         image: {{.Values.image}}:{{.Values.tag}}
         ports:
         - containerPort: 8080
+      env:
+        {{- range $key, $value := .Values.env }}
+        - name: {{ $key }}
+          value: {{ $value | quote }}
+        {{- end }}
