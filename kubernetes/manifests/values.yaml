@@ -11,6 +11,9 @@ serviceTargetPort: 8080
 
 # Both are added to the container environment in podSpec as envFrom source.
 env:
+  TENANT: value10
+  BEARER_TOKEN: value1
+  NEWRELIC_TOKEN: <+secrets.getValue("new_relic_license_key")>
   config:
     TENANT: value10
     BEARER_TOKEN: value1
