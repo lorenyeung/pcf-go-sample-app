@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: tinyproxy
+  annotations:
+    harness.io/skip-file-for-deploy: true 
 spec:
   replicas: 1
   selector:
