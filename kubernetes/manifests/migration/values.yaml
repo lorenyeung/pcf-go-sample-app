@@ -1,0 +1,11 @@
+# harness.io/skip-file-for-deploy
+namespace: <+infra.namespace>migration
+replicas: 1
+name: <+service.identifier>migration
+image: <+artifacts.primary.imagePath>
+tag: <+artifacts.primary.tag>
+
+serviceType: LoadBalancer
+
+servicePort: 80
+serviceTargetPort: 8080
