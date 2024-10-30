@@ -1,27 +1,13 @@
 # harness.io/skip-file-for-deploy
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: Service
 metadata:
-  name: tinyproxy
+  name: tinyproxy-service
 spec:
-  replicas: 1
   selector:
-    matchLabels:
-      app: tinyproxy
-  template:
-    metadata:
-      labels:
-        app: tinyproxy
-    spec:
-      containers:
-      - name: tinyproxy
-        image: dannydirect/tinyproxy
-        ports:
-        - containerPort: 8888
-        volumeMounts:
-        - name: tinyproxy-config
-          mountPath: /etc/tinyproxy
-      volumes:
-        - name: tinyproxy-config
-          configMap:
-            name: tinyproxy-config
+    app: tinyproxy
+  ports:
+    - protocol: TCP
+      port: 8888
+      targetPort: 8888
+  type: ClusterIP
