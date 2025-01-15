@@ -1,0 +1,148 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: loren-dev-bg
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-pcfgosampleappk8ssvc-conf
+  labels:
+    name: prometheus-pcfgosampleappk8ssvc-conf
+  namespace: loren-dev-bg
+data:
+  CPU: "1"
+  MEMORY: "2048"
+  POD_MEMORY: "3072"
+  prometheus.yml: |-
+    global:
+      scrape_interval: 10s
+      evaluation_interval: 10s
+
+    scrape_configs:
+      - job_name: 'kubernetes-apiservers'
+
+        kubernetes_sd_configs:
+        - role: endpoints
+        scheme: http
+        metrics_path: '/metrics'
+
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: default;kubernetes;https
+
+      - job_name: 'kubernetes-pods'
+
+        kubernetes_sd_configs:
+        - role: pod
+
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+          action: replace
+          target_label: __metrics_path__
+          regex: (.+)
+        - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+          action: replace
+          regex: ([^:]+)(?::\d+)?;(\d+)
+          replacement: $1:$2
+          target_label: __address__
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: kubernetes_namespace
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: kubernetes_pod_name
+
+      - job_name: 'kubernetes-service-endpoints'
+
+        kubernetes_sd_configs:
+        - role: endpoints
+
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scheme]
+          action: replace
+          target_label: __scheme__
+          regex: (https?)
+        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+          action: replace
+          target_label: __metrics_path__
+          regex: (.+)
+        - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+          action: replace
+          target_label: __address__
+          regex: ([^:]+)(?::\d+)?;(\d+)
+          replacement: $1:$2
+        - action: labelmap
+          regex: __meta_kubernetes_service_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: kubernetes_namespace
+        - source_labels: [__meta_kubernetes_service_name]
+          action: replace
+          target_label: kubernetes_name
+      - job_name: "Kubelet"
+        scheme: http
+        metrics_path: "/metrics/cadvisor"
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pcfgosampleappk8ssvc-prometheus-service
+  namespace: loren-dev-bg
+spec:
+  selector:
+    app: prometheus-pcfgosampleappk8ssvc
+  type: LoadBalancer
+  ports:
+    - port: 8085
+      targetPort: 9090
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pcfgosampleappk8ssvc-prometheus-deployment
+  namespace: loren-dev-bg
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: prometheus-pcfgosampleappk8ssvc
+    spec:
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.6.0
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.path=/prometheus/"
+          ports:
+            - containerPort: 9090
+          volumeMounts:
+            - name: prometheus-config-volume
+              mountPath: /etc/prometheus/
+            - name: prometheus-storage-volume
+              mountPath: /prometheus/
+      volumes:
+        - name: prometheus-config-volume
+          configMap:
+            defaultMode: 420
+            name: prometheus-pcfgosampleappk8ssvc-conf
+
+        - name: prometheus-storage-volume
+          emptyDir: {}
+  selector:
+    matchLabels:
+      app: prometheus-pcfgosampleappk8ssvc
