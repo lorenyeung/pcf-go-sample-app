@@ -63,7 +63,7 @@ func main() {
 		newrelic.ConfigAppLogForwardingEnabled(true),
 	)
 	if err != nil {
-		fmt.Print("new relic error:", err)
+		fmt.Print("new relic error, need to handle better:", err)
 	}
 
 	index := Index{"Unknown", -1, "Unknown", []string{}, []Service{}, "Unknown"}
