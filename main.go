@@ -29,6 +29,8 @@ var indexHtml embed.FS
 //go:embed all:static
 var staticAssets embed.FS
 
+var version string
+
 // Index holds fields displayed on the index.html template
 type Index struct {
 	AppName          string
@@ -61,7 +63,7 @@ func main() {
 		newrelic.ConfigAppLogForwardingEnabled(true),
 	)
 	if err != nil {
-		panic(err)
+		fmt.Print("new relic error:", err)
 	}
 
 	index := Index{"Unknown", -1, "Unknown", []string{}, []Service{}, "Unknown"}
@@ -156,6 +158,11 @@ func main() {
 	http.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		splunkres := splunkcollector("OK Error generated", "ERROR", SplunkTenant, SplunkToken, index.AppName, name, logger)
 		httpjsonresponse("ERROR:"+splunkres, http.StatusInternalServerError, w)
+	})
+
+	http.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
+
+		httpjsonresponse("version:"+version, http.StatusOK, w)
 	})
 
 	http.HandleFunc(newrelic.WrapHandleFunc(app, "/nrerror", func(w http.ResponseWriter, r *http.Request) {
