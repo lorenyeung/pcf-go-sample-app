@@ -119,6 +119,8 @@ spec:
   replicas: 1
   template:
     metadata:
+      annotations:
+        harness.io/direct-apply: true
       labels:
         app: prometheus-pcfgosampleappk8ssvc
     spec:
