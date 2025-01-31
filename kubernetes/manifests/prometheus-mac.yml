@@ -115,12 +115,12 @@ kind: Deployment
 metadata:
   name: pcfgosampleappk8ssvc-prometheus-deployment
   namespace: loren-dev-bg
+  annotations:
+    harness.io/direct-apply: true
 spec:
   replicas: 1
   template:
     metadata:
-      annotations:
-        harness.io/direct-apply: true
       labels:
         app: prometheus-pcfgosampleappk8ssvc
     spec:
