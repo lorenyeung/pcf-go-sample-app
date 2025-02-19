@@ -17,3 +17,7 @@ env:
     NEWRELIC_TOKEN: <+secrets.getValue("new_relic_license_key")>
   secrets:
     key2: value2
+
+deployment:
+  stageHost: app.harness.io
+  stagePath: /
