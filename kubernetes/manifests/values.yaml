@@ -19,5 +19,6 @@ env:
     key2: value2
 
 deployment:
+  stageRoute: route
   stageHost: app.harness.io
   stagePath: /
