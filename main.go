@@ -48,10 +48,8 @@ type Service struct {
 	Label string
 }
 
-var statsdClient *statsd.Client
-
 // init datadog connection to local datadog agent - no api key required
-func initStatsD() {
+func initStatsD() *statsd.Client {
 	// Get DogStatsD address from env or default to localhost
 	addr := os.Getenv("DOGSTATSD_ADDR")
 	if addr == "" {
@@ -68,7 +66,7 @@ func initStatsD() {
 	client.Namespace = "pcfgosampleappk8ssvc."
 	client.Tags = append(client.Tags, "env:dev")
 
-	statsdClient = client
+	return client
 }
 
 func main() {
@@ -80,7 +78,7 @@ func main() {
 	NewRelicToken := os.Getenv("NEWRELIC_TOKEN")
 
 	//init dd
-	initStatsD()
+	statsdClient := initStatsD()
 
 	// Validate access to Splunk Cloud Services and tenant
 
