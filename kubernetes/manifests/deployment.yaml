@@ -35,7 +35,7 @@ spec:
           - name: KUBERNETES_CONTAINER_NAME
             valueFrom:
               fieldRef:
-                fieldPath: spec.containers[0].name        
+                fieldPath: metadata.name
           {{- range $key, $value := .Values.env.config }}
           - name: {{ $key }}
             value: {{ $value | quote }}
