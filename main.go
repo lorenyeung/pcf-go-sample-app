@@ -84,12 +84,14 @@ func main() {
 	podName := os.Getenv("KUBERNETES_POD_NAME")
 	namespace := os.Getenv("KUBERNETES_NAMESPACE")
 	containerName := os.Getenv("KUBERNETES_CONTAINER_NAME")
+	deploymentName := os.Getenv("DEPLOYMENT_NAME")
 
 	// Define Kubernetes tags dynamically
 	kubernetesTags := []string{
-		"kubernetes.pod_name=" + podName,
-		"kubernetes.namespace=" + namespace,
-		"kubernetes.container_name=" + containerName,
+		"pod_name:" + podName,
+		"kube_namespace:" + namespace,
+		"kubernetes.container_name:" + containerName,
+		"kube_deployment:" + deploymentName,
 	}
 
 	// Validate access to Splunk Cloud Services and tenant

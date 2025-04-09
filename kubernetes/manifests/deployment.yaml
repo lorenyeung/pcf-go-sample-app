@@ -36,6 +36,10 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.name
+          - name: DEPLOYMENT_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.labels['app.kubernetes.io/name']             
           {{- range $key, $value := .Values.env.config }}
           - name: {{ $key }}
             value: {{ $value | quote }}
