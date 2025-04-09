@@ -15,6 +15,7 @@ env:
     TENANT: value10
     BEARER_TOKEN: value1
     NEWRELIC_TOKEN: <+secrets.getValue("new_relic_license_key")>
+    DOGSTATSD_ADDR: datadog-agent.default.svc.cluster.local:8125
   secrets:
     key2: value2
 
