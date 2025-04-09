@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/DataDog/datadog-go/statsd"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -47,6 +48,29 @@ type Service struct {
 	Label string
 }
 
+var statsdClient *statsd.Client
+
+// init datadog connection to local datadog agent - no api key required
+func initStatsD() {
+	// Get DogStatsD address from env or default to localhost
+	addr := os.Getenv("DOGSTATSD_ADDR")
+	if addr == "" {
+		addr = "127.0.0.1:8125" // For local dev or sidecar
+	}
+
+	client, err := statsd.New(addr)
+	if err != nil {
+		log.Fatalf("failed to connect to statsd: %v", err)
+	} else {
+		fmt.Println("started Datadog collection via ", addr)
+	}
+
+	client.Namespace = "pcfgosampleappk8ssvc."
+	client.Tags = append(client.Tags, "env:dev")
+
+	statsdClient = client
+}
+
 func main() {
 	//init splunk
 	checkForTenantToken()
@@ -54,6 +78,9 @@ func main() {
 	SplunkToken := os.Getenv("BEARER_TOKEN")
 	SplunkTenant := os.Getenv("TENANT")
 	NewRelicToken := os.Getenv("NEWRELIC_TOKEN")
+
+	//init dd
+	initStatsD()
 
 	// Validate access to Splunk Cloud Services and tenant
 
@@ -63,7 +90,7 @@ func main() {
 		newrelic.ConfigAppLogForwardingEnabled(true),
 	)
 	if err != nil {
-		fmt.Print("new relic error, need to handle better:", err)
+		fmt.Println("new relic error, need to handle better:", err)
 	}
 
 	index := Index{"Unknown", -1, "Unknown", []string{}, []Service{}, "Unknown"}
@@ -146,16 +173,28 @@ func main() {
 	})
 
 	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+		err := statsdClient.Incr("endpoint.healthcheck.hit", []string{"endpoint:/healthcheck"}, 1)
+		if err != nil {
+			log.Printf("failed to send metric: %v", err)
+		}
 		splunkres := splunkcollector("OK application successfully pinged", "INFO", SplunkTenant, SplunkToken, index.AppName, name, logger)
 		httpjsonresponse("OK:"+splunkres, http.StatusOK, w)
 	})
 
 	http.HandleFunc("/warn", func(w http.ResponseWriter, r *http.Request) {
+		err := statsdClient.Incr("endpoint.warn.hit", []string{"endpoint:/warn"}, 1)
+		if err != nil {
+			log.Printf("failed to send metric: %v", err)
+		}
 		splunkres := splunkcollector("OK Warn generated", "WARN", SplunkTenant, SplunkToken, index.AppName, name, logger)
 		httpjsonresponse("WARNING:"+splunkres, 199, w)
 	})
 
 	http.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
+		err := statsdClient.Incr("endpoint.error.hit", []string{"endpoint:/error"}, 1)
+		if err != nil {
+			log.Printf("failed to send metric: %v", err)
+		}
 		splunkres := splunkcollector("OK Error generated", "ERROR", SplunkTenant, SplunkToken, index.AppName, name, logger)
 		httpjsonresponse("ERROR:"+splunkres, http.StatusInternalServerError, w)
 	})
@@ -246,9 +285,9 @@ func splunkcollector(msg, level, tenant, token, tasApplicationName, name string,
 
 func checkForTenantToken() {
 	if os.Getenv("BEARER_TOKEN") == "" {
-		fmt.Printf("$BEARER_TOKEN must be set for splunk to log")
+		fmt.Println("$BEARER_TOKEN must be set for splunk to log")
 	}
 	if os.Getenv("TENANT") == "" {
-		fmt.Printf("$TENANT must be set splunk to log")
+		fmt.Println("$TENANT must be set splunk to log")
 	}
 }

@@ -5,12 +5,14 @@ go 1.21
 toolchain go1.22.5
 
 require (
+	github.com/DataDog/datadog-go v4.8.3+incompatible
 	github.com/cloudfoundry-community/go-cfenv v1.18.0
 	github.com/newrelic/go-agent/v3 v3.35.0
 	github.com/prometheus/client_golang v0.9.3
 )
 
 require (
+	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/beorn7/perks v1.0.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
