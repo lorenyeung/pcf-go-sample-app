@@ -1,10 +1,10 @@
 namespace: <+infra.namespace>
-replicas: 1
+replicas: 2
 name: <+service.identifier>
 image: <+artifacts.primary.imagePath>
 tag: <+artifacts.primary.tag>
 
-serviceType: ClusterIP
+serviceType: LoadBalancer
 
 servicePort: 80
 serviceTargetPort: 8080
@@ -17,3 +17,8 @@ env:
     NEWRELIC_TOKEN: <+secrets.getValue("new_relic_license_key")>
   secrets:
     key2: value2
+
+deployment:
+  stageRoute: route
+  stageHost: app.harness.io
+  stagePath: /
