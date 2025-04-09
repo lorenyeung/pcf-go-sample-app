@@ -24,6 +24,18 @@ spec:
         ports:
         - containerPort: 8080
         env:
+          - name: KUBERNETES_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: KUBERNETES_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: KUBERNETES_CONTAINER_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.containers[0].name        
           {{- range $key, $value := .Values.env.config }}
           - name: {{ $key }}
             value: {{ $value | quote }}

@@ -80,6 +80,18 @@ func main() {
 	//init dd
 	statsdClient := initStatsD()
 
+	// Get Kubernetes metadata from environment variables
+	podName := os.Getenv("KUBERNETES_POD_NAME")
+	namespace := os.Getenv("KUBERNETES_NAMESPACE")
+	containerName := os.Getenv("KUBERNETES_CONTAINER_NAME")
+
+	// Define Kubernetes tags dynamically
+	kubernetesTags := []string{
+		"kubernetes.pod_name=" + podName,
+		"kubernetes.namespace=" + namespace,
+		"kubernetes.container_name=" + containerName,
+	}
+
 	// Validate access to Splunk Cloud Services and tenant
 
 	app, err := newrelic.NewApplication(
@@ -171,7 +183,8 @@ func main() {
 	})
 
 	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
-		err := statsdClient.Incr("endpoint.healthcheck.hit", []string{"endpoint:/healthcheck"}, 1)
+		tags := append(kubernetesTags, "endpoint:/ping")
+		err := statsdClient.Incr("endpoint.ping.hit", tags, 1)
 		if err != nil {
 			log.Printf("failed to send metric: %v", err)
 		}
@@ -180,7 +193,8 @@ func main() {
 	})
 
 	http.HandleFunc("/warn", func(w http.ResponseWriter, r *http.Request) {
-		err := statsdClient.Incr("endpoint.warn.hit", []string{"endpoint:/warn"}, 1)
+		tags := append(kubernetesTags, "endpoint:/warn")
+		err := statsdClient.Incr("endpoint.warn.hit", tags, 1)
 		if err != nil {
 			log.Printf("failed to send metric: %v", err)
 		}
@@ -189,7 +203,8 @@ func main() {
 	})
 
 	http.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
-		err := statsdClient.Incr("endpoint.error.hit", []string{"endpoint:/error"}, 1)
+		tags := append(kubernetesTags, "endpoint:/error")
+		err := statsdClient.Incr("endpoint.error.hit", tags, 1)
 		if err != nil {
 			log.Printf("failed to send metric: %v", err)
 		}
